@@ -1,6 +1,6 @@
 dataset_paths = {
     # NIST SD14 Synthesis
-    'nist_sd14_gt_train': '/home/finger/fingerprint-generator/content/Africano/Real',
+    'nist_sd14_gt_train': '/home/finger/fingerprint-generator/content/Africano/Train',
     'nist_sd14_gt_test': '/home/finger/fingerprint-generator/content/Africano/Valid',
 }
 
