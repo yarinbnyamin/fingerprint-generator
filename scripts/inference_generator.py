@@ -44,7 +44,7 @@ def run():
             im_save_path = f"{test_opts.exp_dir}/{str(i).zfill(6)}.png"
             Image.fromarray(np.array(result)).save(im_save_path, dpi=(500, 500))
 
-
+"""
 if __name__ == "__main__":
     # Set random seed
     random_seed = 1
@@ -54,3 +54,4 @@ if __name__ == "__main__":
     device = "cuda"
 
     run()
+"""

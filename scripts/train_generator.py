@@ -16,7 +16,7 @@ from configs import data_configs
 from datasets.images_dataset import ImageDataset
 from models.stylegan2.model import Generator, Discriminator
 from options.train_generator_options import GeneratorTrainOptions
-from training_utils.distributed import (
+from training_utils.distributedd import (
     reduce_loss_dict,
     reduce_sum,
     get_world_size,
@@ -274,7 +274,7 @@ class GeneratorCoach:
                     f"{self.opts.exp_dir}/sample/{str(i).zfill(6)}.png",
                     nrow=int(self.opts.n_sample ** 0.5),
                     normalize=True,
-                    range=(-1, 1),
+                    #range=(-1, 1),
                 )
 
 
@@ -366,7 +366,7 @@ def set_grad_none(model, targets):
         if n in targets:
             p.grad = None
 
-
+"""
 if __name__ == "__main__":
     # Set random seed
     random_seed = 1
@@ -390,3 +390,4 @@ if __name__ == "__main__":
 
     coach = GeneratorCoach(opts)
     coach.train()
+"""
