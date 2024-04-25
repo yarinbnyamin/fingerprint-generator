@@ -5,7 +5,7 @@ from random import sample
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-zip_path = 'content/Africano/Real.zip'
+zip_path = 'content/Africano/finger_1.zip'
 
 extract_to = 'content/Africano/Real'
 
