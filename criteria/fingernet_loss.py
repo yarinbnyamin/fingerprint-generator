@@ -5,7 +5,8 @@ import torch.nn as nn
 from scipy import sparse, spatial
 
 import matplotlib
-matplotlib.use('Qt5Agg')
+
+matplotlib.use("Agg")
 
 from configs.paths_config import model_paths
 
@@ -15,14 +16,13 @@ class FingerNetLoss(nn.Module):
         super(FingerNetLoss, self).__init__()
 
         self.finger_net = FingerNet()
-        self.finger_net.load_state_dict(
-            torch.load(model_paths['fingernet']))
+        self.finger_net.load_state_dict(torch.load(model_paths["fingernet"]))
         self.finger_net.cuda()
 
         self.criterion = nn.L1Loss()
 
         # weights for outputs: ori_out_2, upsample_ori, mnt_o_out, mnt_w_out, mnt_h_out, mnt_s_out
-        self.weights = [1.0/2, 1.0/2, 1.0, 1.0, 1.0, 1.0]
+        self.weights = [1.0 / 2, 1.0 / 2, 1.0, 1.0, 1.0, 1.0]
 
         self.th = 0.5
         self.mask_mult = 1
@@ -33,18 +33,22 @@ class FingerNetLoss(nn.Module):
         re = torch.nn.UpsamplingBilinear2d(512)
         y = re(y)
         x = re(x)
-        x_fnet, y_fnet = self.finger_net(x, label_nc=self.label_nc), self.finger_net(y, label_nc=self.label_nc)
+        x_fnet, y_fnet = self.finger_net(x, label_nc=self.label_nc), self.finger_net(
+            y, label_nc=self.label_nc
+        )
 
         y_mask = (y_fnet[5] > self.th).type_as(y_fnet[5])
-        y_mask = self.mask_bias + self.mask_mult*y_mask
+        y_mask = self.mask_bias + self.mask_mult * y_mask
 
         loss = 0
         for i in range(len(x_fnet)):
             if i == 1:
                 continue
-            loss += self.weights[i] * self.criterion(x_fnet[i]*y_mask, y_fnet[i].detach()*y_mask)
+            loss += self.weights[i] * self.criterion(
+                x_fnet[i] * y_mask, y_fnet[i].detach() * y_mask
+            )
 
-        loss += self.criterion(x*re(y_mask), y.detach()*re(y_mask))
+        loss += self.criterion(x * re(y_mask), y.detach() * re(y_mask))
 
         return loss
 
@@ -60,7 +64,9 @@ class FingerNetLoss(nn.Module):
         output_fnet_np = []
         for i in range(len(output_fnet)):
             output_fnet_np.append(output_fnet[i].detach().cpu().numpy())
-        mnt = self.label2mnt(output_fnet_np[5], output_fnet_np[3], output_fnet_np[4], output_fnet_np[2])
+        mnt = self.label2mnt(
+            output_fnet_np[5], output_fnet_np[3], output_fnet_np[4], output_fnet_np[2]
+        )
         mnt_nms = self.nms(mnt)
         return mnt_nms
 
@@ -70,8 +76,12 @@ class FingerNetLoss(nn.Module):
         mnt_w_out = np.squeeze(mnt_w_out)
         mnt_h_out = np.squeeze(mnt_h_out)
         mnt_o_out = np.squeeze(mnt_o_out)
-        assert len(mnt_s_out.shape) == 2 and len(mnt_w_out.shape) == 3 and len(mnt_h_out.shape) == 3 and len(
-            mnt_o_out.shape) == 3
+        assert (
+            len(mnt_s_out.shape) == 2
+            and len(mnt_w_out.shape) == 3
+            and len(mnt_h_out.shape) == 3
+            and len(mnt_o_out.shape) == 3
+        )
         # get cls results
         mnt_sparse = sparse.coo_matrix(mnt_s_out > thresh)
         mnt_list = [(r, c) for r, c in zip(mnt_sparse.row, mnt_sparse.col)]
@@ -81,13 +91,19 @@ class FingerNetLoss(nn.Module):
         # get regression results
         mnt_w_out = np.argmax(mnt_w_out, axis=0)
         mnt_h_out = np.argmax(mnt_h_out, axis=0)
-        mnt_o_out = np.argmax(mnt_o_out, axis=0)  # TODO: use ori_highest_peak(np version)
+        mnt_o_out = np.argmax(
+            mnt_o_out, axis=0
+        )  # TODO: use ori_highest_peak(np version)
         # get final mnt
         mnt_final = np.zeros((len(mnt_list), 4))
         mnt_final[:, 0] = mnt_sparse.col * 8 + mnt_w_out[mnt_list[:, 0], mnt_list[:, 1]]
         mnt_final[:, 1] = mnt_sparse.row * 8 + mnt_h_out[mnt_list[:, 0], mnt_list[:, 1]]
-        mnt_final[:, 2] = (mnt_o_out[mnt_list[:, 0], mnt_list[:, 1]] * 2 - 89.) / 180 * np.pi
-        mnt_final[mnt_final[:, 2] < 0.0, 2] = mnt_final[mnt_final[:, 2] < 0.0, 2] + 2 * np.pi
+        mnt_final[:, 2] = (
+            (mnt_o_out[mnt_list[:, 0], mnt_list[:, 1]] * 2 - 89.0) / 180 * np.pi
+        )
+        mnt_final[mnt_final[:, 2] < 0.0, 2] = (
+            mnt_final[mnt_final[:, 2] < 0.0, 2] + 2 * np.pi
+        )
         mnt_final[:, 3] = mnt_s_out[mnt_list[:, 0], mnt_list[:, 1]]
         return mnt_final
 
@@ -99,12 +115,14 @@ class FingerNetLoss(nn.Module):
         mnt_sort.sort(key=lambda x: x[3], reverse=True)
         mnt_sort = np.array(mnt_sort)
         # cal distance
-        inrange = self.distance(mnt_sort, mnt_sort, max_D=16, max_O=np.pi / 6).astype(np.float32)
+        inrange = self.distance(mnt_sort, mnt_sort, max_D=16, max_O=np.pi / 6).astype(
+            np.float32
+        )
         keep_list = np.ones(mnt_sort.shape[0])
         for i in range(mnt_sort.shape[0]):
             if keep_list[i] == 0:
                 continue
-            keep_list[i + 1:] = keep_list[i + 1:] * (1 - inrange[i, i + 1:])
+            keep_list[i + 1 :] = keep_list[i + 1 :] * (1 - inrange[i, i + 1 :])
         return mnt_sort[keep_list.astype(np.bool), :]
 
     def angle_delta(self, A, B, max_D=np.pi * 2):
@@ -113,8 +131,12 @@ class FingerNetLoss(nn.Module):
         return delta
 
     def distance(self, y_true, y_pred, max_D=16, max_O=np.pi / 6):
-        D = spatial.distance.cdist(y_true[:, :2], y_pred[:, :2], 'euclidean')
-        O = spatial.distance.cdist(np.reshape(y_true[:, 2], [-1, 1]), np.reshape(y_pred[:, 2], [-1, 1]), self.angle_delta)
+        D = spatial.distance.cdist(y_true[:, :2], y_pred[:, :2], "euclidean")
+        O = spatial.distance.cdist(
+            np.reshape(y_true[:, 2], [-1, 1]),
+            np.reshape(y_pred[:, 2], [-1, 1]),
+            self.angle_delta,
+        )
         return (D <= max_D) * (O <= max_O)
 
 
@@ -137,7 +159,7 @@ def img_normalization_torch(img_input, m0=0.0, var0=1.0):
 # atan2 function
 def atan2_torch(y_x):
     y, x = y_x[0], y_x[1] + 1e-07
-    atan = torch.atan2(y,  x)
+    atan = torch.atan2(y, x)
     return atan
 
 
@@ -152,7 +174,9 @@ def merge_concat_torch(x):
 def select_max_torch(x):
     x_norm = x / (torch.max(x, 1, keepdim=True)[0] + 1e-07)
     x_norm = torch.where(x_norm > 0.999, x_norm, torch.zeros_like(x_norm))
-    x_norm = x_norm / (torch.sum(x_norm, 1, keepdim=True) + 1e-07)  # prevent two or more ori is selected
+    x_norm = x_norm / (
+        torch.sum(x_norm, 1, keepdim=True) + 1e-07
+    )  # prevent two or more ori is selected
     return x_norm
 
 
@@ -239,7 +263,9 @@ class FingerNet(nn.Module):
         # enhance part
         self.enh_img_real_1 = nn.Conv2d(1, 90, 25, stride=1, dilation=1, padding=12)
         self.enh_img_imag_1 = nn.Conv2d(1, 90, 25, stride=1, dilation=1, padding=12)
-        self.ori_peak = nn.Conv2d(90, 90, 1, stride=1, dilation=1, padding=0, bias=False)
+        self.ori_peak = nn.Conv2d(
+            90, 90, 1, stride=1, dilation=1, padding=0, bias=False
+        )
         # ----------------------------------------------------------------------------
         # mnt part
         self.convmnt_1_1 = nn.Conv2d(2, 64, 9, stride=1, dilation=1, padding=4)
@@ -363,9 +389,13 @@ class FingerNet(nn.Module):
 
         ori_peak = self.ori_peak(ori_out_1)
         ori_peak = select_max_torch(ori_peak)
-        upsample_ori = nn.UpsamplingNearest2d(size=(ori_peak.shape[2] * 8, ori_peak.shape[3] * 8))(ori_peak)
+        upsample_ori = nn.UpsamplingNearest2d(
+            size=(ori_peak.shape[2] * 8, ori_peak.shape[3] * 8)
+        )(ori_peak)
         seg_round = nn.Softsign()(seg_out)
-        upsample_seg = nn.UpsamplingNearest2d(size=(seg_round.shape[2] * 8, seg_round.shape[3] * 8))(seg_round)
+        upsample_seg = nn.UpsamplingNearest2d(
+            size=(seg_round.shape[2] * 8, seg_round.shape[3] * 8)
+        )(seg_round)
         mul_mask_real = filter_img_real * upsample_ori
         enh_img_real = reduce_sum_torch(mul_mask_real)
         mul_mask_imag = filter_img_imag * upsample_ori
@@ -420,12 +450,12 @@ def _test_fingernet_loss(image):
     img_size = image.shape
     img_size = np.array(img_size, dtype=np.int32) // 8 * 8
     image = image / 255.0
-    image = image[:img_size[0], :img_size[1]]
+    image = image[: img_size[0], : img_size[1]]
     image = np.reshape(image, [1, image.shape[0], image.shape[1], 1])
     image = image.astype(np.float32)
     # run pytorch model
     pytorch_input = torch.from_numpy(image.transpose(0, 3, 1, 2))
-    pytorch_input = pytorch_input.to('cuda')
+    pytorch_input = pytorch_input.to("cuda")
 
     finger_net_loss = FingerNetLoss()
     finger_net_loss.forward(pytorch_input, pytorch_input)

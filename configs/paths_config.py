@@ -5,7 +5,7 @@ dataset_paths = {
 }
 
 model_paths = {
-    'stylegan_weights': '/hdd/PycharmProjects/fingerprints/stylegan2-pytorch_origin/checkpoint/480000.pt ',
-    'encoder_pretrained': '/hdd/PycharmProjects/fingerprints/pixel2style2pixel/pretrained_models/model_ir_se50.pth',
-    'fingernet': '/hdd/PycharmProjects/fingerprints/pixel2style2pixel/pretrained_models/fingerNet.pth'
+    "stylegan_weights": "output/checkpoint/360000.pt",
+    "encoder_pretrained": "pretrained_models/best_model.pt",
+    "fingernet": "pretrained_models/Model.model",
 }

@@ -12,6 +12,7 @@ from options.inference_generator_options import GeneratorInferenceOptions
 
 
 def run():
+    device="cuda"
     test_opts = GeneratorInferenceOptions().parse()
 
     if not os.path.exists(test_opts.exp_dir):
